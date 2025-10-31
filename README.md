@@ -103,7 +103,7 @@ source venv/bin/activate  # 가상환경 활성화 (macOS/Linux)
 python app.py
 ```
 
-서버가 `http://localhost:5000`에서 실행됩니다.
+서버가 `http://localhost:3000`에서 실행됩니다.
 
 ## 스크립트 파일 설명
 
@@ -199,7 +199,7 @@ POST /convert
 **curl 예시:**
 ```bash
 # PDF를 변환하고 API에 업로드
-curl -X POST http://localhost:5000/convert \
+curl -X POST http://localhost:3000/convert \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-r2-bucket.com/sample.pdf",
@@ -210,7 +210,7 @@ curl -X POST http://localhost:5000/convert \
   }'
 
 # 헤더 없이 업로드
-curl -X POST http://localhost:5000/convert \
+curl -X POST http://localhost:3000/convert \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-r2-bucket.com/sample.pdf",
@@ -247,7 +247,7 @@ import requests
 
 # PDF를 변환하고 API에 업로드
 response = requests.post(
-    'http://localhost:5000/convert',
+    'http://localhost:3000/convert',
     json={
         'url': 'https://your-r2-bucket.com/sample.pdf',
         'upload_url': 'https://api.example.com/upload/image',
@@ -269,7 +269,7 @@ for page_result in result['results']:
 ### JavaScript로 API 호출
 ```javascript
 // PDF를 변환하고 API에 업로드
-fetch('http://localhost:5000/convert', {
+fetch('http://localhost:3000/convert', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ fetch('http://localhost:5000/convert', {
   });
 
 // PDF 정보만 조회
-fetch('http://localhost:5000/convert/info', {
+fetch('http://localhost:3000/convert/info', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -327,7 +327,7 @@ API는 다음과 같은 에러 응답을 반환합니다:
 
 ```bash
 pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+gunicorn -w 4 -b 0.0.0.0:3000 app:app
 ```
 
 ## 주의사항

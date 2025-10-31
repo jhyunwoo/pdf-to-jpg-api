@@ -18,7 +18,7 @@ echo ================================================
 echo PDF to JPG Converter API 서버 시작
 echo ================================================
 echo.
-echo 서버 주소: http://localhost:5000
+echo 서버 주소: http://localhost:3000
 echo 종료하려면 Ctrl+C를 누르세요
 echo.
 

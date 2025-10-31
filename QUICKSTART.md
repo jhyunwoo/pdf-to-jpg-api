@@ -12,7 +12,7 @@ chmod +x setup_and_run.sh
 ./setup_and_run.sh
 ```
 
-끝! 🎉 서버가 http://localhost:5000 에서 실행됩니다.
+끝! 🎉 서버가 http://localhost:3000 에서 실행됩니다.
 
 ### Windows에서 실행
 
@@ -20,7 +20,7 @@ chmod +x setup_and_run.sh
 setup_and_run.bat
 ```
 
-끝! 🎉 서버가 http://localhost:5000 에서 실행됩니다.
+끝! 🎉 서버가 http://localhost:3000 에서 실행됩니다.
 
 ---
 
@@ -29,13 +29,13 @@ setup_and_run.bat
 ### 1. 서버 상태 확인
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:3000/health
 ```
 
 ### 2. PDF를 JPG로 변환하고 업로드
 
 ```bash
-curl -X POST http://localhost:5000/convert \
+curl -X POST http://localhost:3000/convert \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-r2-bucket.com/sample.pdf",
@@ -52,7 +52,7 @@ curl -X POST http://localhost:5000/convert \
 import requests
 
 response = requests.post(
-    'http://localhost:5000/convert',
+    'http://localhost:3000/convert',
     json={
         'url': 'https://your-r2-bucket.com/sample.pdf',
         'upload_url': 'https://api.example.com/upload/image',
