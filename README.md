@@ -32,7 +32,31 @@ sudo apt-get install -y poppler-utils
 1. [Poppler for Windows](http://blog.alivate.com.au/poppler-windows/)에서 다운로드
 2. PATH에 bin 폴더 추가
 
-## 설치
+## 빠른 시작 (자동 설치 스크립트)
+
+### 방법 1: 자동 설치 및 실행 스크립트 사용 (권장)
+
+가장 간단한 방법입니다. 스크립트가 자동으로 환경을 설정하고 서버를 실행합니다.
+
+#### macOS/Linux
+```bash
+chmod +x setup_and_run.sh
+./setup_and_run.sh
+```
+
+#### Windows
+```cmd
+setup_and_run.bat
+```
+
+이 스크립트는 다음을 자동으로 수행합니다:
+- ✅ Python 버전 확인
+- ✅ Poppler 설치 확인 및 설치 (macOS는 자동, Linux/Windows는 안내)
+- ✅ 가상환경 생성
+- ✅ 패키지 설치
+- ✅ 서버 실행
+
+### 방법 2: 수동 설치
 
 1. 저장소 클론 (또는 프로젝트 디렉토리로 이동)
 ```bash
@@ -54,11 +78,32 @@ pip install -r requirements.txt
 
 ## 실행
 
+### 환경이 이미 설정된 경우
+
+#### macOS/Linux
 ```bash
+./run.sh
+```
+
+#### Windows
+```cmd
+run.bat
+```
+
+### 또는 직접 실행
+```bash
+source venv/bin/activate  # 가상환경 활성화 (macOS/Linux)
+# venv\Scripts\activate  # Windows
 python app.py
 ```
 
 서버가 `http://localhost:5000`에서 실행됩니다.
+
+## 스크립트 파일 설명
+
+- **`setup_and_run.sh`** / **`setup_and_run.bat`**: 환경 설정부터 서버 실행까지 한 번에 (최초 실행 시)
+- **`setup.sh`**: 환경만 설정하고 서버는 실행하지 않음
+- **`run.sh`** / **`run.bat`**: 이미 설정된 환경에서 서버만 실행
 
 ## API 엔드포인트
 
