@@ -28,6 +28,12 @@ sudo apt-get update
 sudo apt-get install -y poppler-utils
 ```
 
+**⚠️ Debian Buster 등 구버전 사용 시:**
+저장소 404 오류가 발생하면 전용 설치 스크립트를 사용하세요:
+```bash
+./install_poppler_debian.sh
+```
+
 #### Windows
 1. [Poppler for Windows](http://blog.alivate.com.au/poppler-windows/)에서 다운로드
 2. PATH에 bin 폴더 추가
@@ -354,6 +360,16 @@ Content-Length: 123456
 
 [JPEG binary data]
 ```
+
+## 문제 해결
+
+설치 또는 실행 중 문제가 발생하면 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)를 참고하세요.
+
+주요 문제:
+- **Debian Buster 저장소 오류**: `./install_poppler_debian.sh` 실행
+- **Poppler 설치 실패**: 전용 설치 스크립트 또는 수동 설치
+- **포트 충돌**: `app.py`에서 포트 번호 변경
+- **패키지 설치 오류**: pip 업그레이드 및 재설치
 
 ## 라이선스
 

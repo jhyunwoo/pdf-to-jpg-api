@@ -93,10 +93,23 @@ run.bat
 brew install poppler
 ```
 
-#### Ubuntu/Debian
+#### Ubuntu/Debian (최신 버전)
 ```bash
+sudo apt-get update
 sudo apt-get install -y poppler-utils
 ```
+
+#### Debian Buster 또는 구버전 (저장소 404 오류 발생 시)
+```bash
+chmod +x install_poppler_debian.sh
+./install_poppler_debian.sh
+```
+
+이 스크립트가 자동으로 문제를 해결합니다:
+- Archive 저장소로 전환
+- 또는 소스에서 컴파일
+
+자세한 내용: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
 #### Windows
 1. [Poppler for Windows](https://github.com/oschwartz10612/poppler-windows/releases/) 다운로드

@@ -48,28 +48,83 @@ if ! command -v pdfinfo &> /dev/null; then
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux
         echo "Linux가 감지되었습니다."
-        echo "다음 명령어로 Poppler를 설치해주세요:"
         echo ""
-        echo "  Ubuntu/Debian: sudo apt-get install -y poppler-utils"
-        echo "  CentOS/RHEL: sudo yum install -y poppler-utils"
-        echo ""
-        read -p "Poppler를 설치하시겠습니까? (y/n) " -n 1 -r
+        read -p "Poppler를 자동으로 설치하시겠습니까? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             if command -v apt-get &> /dev/null; then
-                sudo apt-get update
-                sudo apt-get install -y poppler-utils
-                echo "✅ Poppler 설치 완료"
+                echo "apt-get으로 설치 시도 중..."
+                
+                # apt-get 업데이트 및 설치 시도
+                if sudo apt-get update 2>&1 | grep -q "404\|Release"; then
+                    echo ""
+                    echo "⚠️  저장소 오류 감지 (Debian Buster EOL 등)"
+                    echo ""
+                    echo "다음 옵션 중 선택하세요:"
+                    echo "1) 전용 설치 스크립트 실행 (./install_poppler_debian.sh)"
+                    echo "2) Poppler 없이 계속 (나중에 수동 설치 필요)"
+                    echo "3) 종료"
+                    echo ""
+                    read -p "선택 (1-3): " -n 1 -r choice
+                    echo
+                    
+                    case $choice in
+                        1)
+                            if [ -f "install_poppler_debian.sh" ]; then
+                                echo "전용 설치 스크립트 실행 중..."
+                                chmod +x install_poppler_debian.sh
+                                ./install_poppler_debian.sh
+                            else
+                                echo "❌ install_poppler_debian.sh를 찾을 수 없습니다."
+                                exit 1
+                            fi
+                            ;;
+                        2)
+                            echo "⚠️  경고: Poppler 없이는 PDF 변환이 작동하지 않습니다."
+                            echo "   서버는 실행되지만 /convert API는 오류를 반환합니다."
+                            ;;
+                        3)
+                            echo "설치를 취소합니다."
+                            exit 1
+                            ;;
+                        *)
+                            echo "잘못된 선택입니다."
+                            exit 1
+                            ;;
+                    esac
+                else
+                    # 정상적으로 업데이트됨, 설치 시도
+                    if sudo apt-get install -y poppler-utils; then
+                        echo "✅ Poppler 설치 완료"
+                    else
+                        echo "❌ Poppler 설치 실패"
+                        exit 1
+                    fi
+                fi
             elif command -v yum &> /dev/null; then
                 sudo yum install -y poppler-utils
                 echo "✅ Poppler 설치 완료"
             else
-                echo "❌ 패키지 매니저를 찾을 수 없습니다. 수동으로 설치해주세요."
+                echo "❌ 패키지 매니저를 찾을 수 없습니다."
+                echo "   수동 설치 방법:"
+                echo "   Ubuntu/Debian: sudo apt-get install -y poppler-utils"
+                echo "   CentOS/RHEL: sudo yum install -y poppler-utils"
                 exit 1
             fi
         else
-            echo "Poppler 없이는 API가 작동하지 않습니다. 나중에 설치해주세요."
-            exit 1
+            echo ""
+            echo "⚠️  경고: Poppler 없이는 PDF 변환이 작동하지 않습니다."
+            echo ""
+            read -p "Poppler 없이 계속하시겠습니까? (y/n) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "설치를 취소합니다."
+                echo ""
+                echo "Poppler 수동 설치 후 다시 실행해주세요:"
+                echo "  Ubuntu/Debian: sudo apt-get install -y poppler-utils"
+                echo "  또는 전용 스크립트: ./install_poppler_debian.sh"
+                exit 1
+            fi
         fi
     fi
 else
