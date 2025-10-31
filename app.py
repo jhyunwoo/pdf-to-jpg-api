@@ -6,8 +6,29 @@ import tempfile
 import uuid
 from io import BytesIO
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
+
+# 환경 변수에서 설정 가져오기
+ENV = os.getenv('FLASK_ENV', 'development')
+PORT = int(os.getenv('PORT', 3000))
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# 로깅 설정
+if ENV == 'production':
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        handlers=[
+            logging.FileHandler('logs/app.log'),
+            logging.StreamHandler()
+        ]
+    )
+else:
+    logging.basicConfig(level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
 
 # 임시 파일 저장 디렉토리
 TEMP_DIR = tempfile.gettempdir()
@@ -334,5 +355,14 @@ def home():
     }), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3000)
+    # 로그 디렉토리 생성
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    
+    # 개발 환경에서만 Flask 내장 서버 사용
+    if ENV == 'development':
+        logger.info(f"Starting development server on port {PORT}")
+        app.run(debug=DEBUG, host='0.0.0.0', port=PORT)
+    else:
+        logger.warning("Production 환경에서는 Gunicorn을 사용하세요: gunicorn -c gunicorn_config.py app:app")
 

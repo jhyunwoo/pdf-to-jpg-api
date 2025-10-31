@@ -1,8 +1,8 @@
 # 빠른 시작 가이드
 
-## 1분 안에 시작하기
+## 개발 환경 - 1분 안에 시작하기
 
-### macOS에서 실행
+### 로컬 테스트/개발
 
 ```bash
 # 1. 스크립트 실행 권한 부여 (최초 1회만)
@@ -12,15 +12,30 @@ chmod +x setup_and_run.sh
 ./setup_and_run.sh
 ```
 
-끝! 🎉 서버가 http://localhost:3000 에서 실행됩니다.
+끝! 🎉 개발 서버가 http://localhost:3000 에서 실행됩니다.
 
-### Windows에서 실행
+## Production 환경 - 배포하기 ⭐
 
-```cmd
-setup_and_run.bat
+### 서버 배포 (최초 1회)
+
+```bash
+# 배포 스크립트 실행
+./deploy.sh
+
+# 서버 시작
+./start.sh
 ```
 
-끝! 🎉 서버가 http://localhost:3000 에서 실행됩니다.
+끝! 🚀 Production 서버가 백그라운드에서 실행됩니다.
+
+### 서버 관리
+
+```bash
+./status.sh    # 상태 확인
+./stop.sh      # 중지
+./restart.sh   # 재시작
+./start.sh     # 시작
+```
 
 ---
 
@@ -70,16 +85,16 @@ print(f"업로드 완료: {result['uploaded']}/{result['total_pages']} 페이지
 
 ## 다음 실행부터는?
 
-이미 환경이 설정되어 있다면 더 빠르게 실행할 수 있습니다:
-
-### macOS/Linux
+### 개발 환경
 ```bash
 ./run.sh
 ```
 
-### Windows
-```cmd
-run.bat
+### Production 환경
+```bash
+./start.sh    # 시작
+./status.sh   # 상태 확인
+./stop.sh     # 중지
 ```
 
 ---
@@ -111,9 +126,10 @@ chmod +x install_poppler_debian.sh
 
 자세한 내용: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-#### Windows
-1. [Poppler for Windows](https://github.com/oschwartz10612/poppler-windows/releases/) 다운로드
-2. 압축 해제 후 `bin` 폴더를 시스템 PATH에 추가
+#### CentOS/RHEL
+```bash
+sudo yum install -y poppler-utils
+```
 
 ### Python을 찾을 수 없다는 오류
 
@@ -121,5 +137,9 @@ Python 3.8 이상을 설치해주세요: https://www.python.org/downloads/
 
 ---
 
-더 자세한 내용은 [README.md](README.md)를 참고하세요!
+## 더 알아보기
+
+- **기본 사용법**: [README.md](README.md)
+- **Production 배포**: [DEPLOY.md](DEPLOY.md) ⭐
+- **문제 해결**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 

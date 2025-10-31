@@ -37,6 +37,7 @@ instance/
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # IDEs
 .vscode/
@@ -48,6 +49,7 @@ instance/
 
 # Logs
 *.log
+logs/
 
 # Temporary files
 *.tmp
@@ -58,4 +60,7 @@ temp_*.pdf
 *.test.pdf
 *.test.jpg
 test_output/
+
+# Gunicorn
+*.pid
 

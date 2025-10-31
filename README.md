@@ -34,33 +34,50 @@ sudo apt-get install -y poppler-utils
 ./install_poppler_debian.sh
 ```
 
-#### Windows
-1. [Poppler for Windows](http://blog.alivate.com.au/poppler-windows/)에서 다운로드
-2. PATH에 bin 폴더 추가
+#### CentOS/RHEL
+```bash
+sudo yum install -y poppler-utils
+```
 
-## 빠른 시작 (자동 설치 스크립트)
+> **참고**: 이 API는 Linux/Unix 환경에 최적화되어 있습니다.
 
-### 방법 1: 자동 설치 및 실행 스크립트 사용 (권장)
+## 빠른 시작
 
-가장 간단한 방법입니다. 스크립트가 자동으로 환경을 설정하고 서버를 실행합니다.
+### 개발 환경
 
-#### macOS/Linux
+개발 환경에서 테스트하려면:
+
 ```bash
 chmod +x setup_and_run.sh
 ./setup_and_run.sh
 ```
 
-#### Windows
-```cmd
-setup_and_run.bat
-```
-
 이 스크립트는 다음을 자동으로 수행합니다:
 - ✅ Python 버전 확인
-- ✅ Poppler 설치 확인 및 설치 (macOS는 자동, Linux/Windows는 안내)
+- ✅ Poppler 설치 확인 및 설치
 - ✅ 가상환경 생성
 - ✅ 패키지 설치
-- ✅ 서버 실행
+- ✅ 개발 서버 실행
+
+### Production 환경 ⭐
+
+Production 환경에서 배포하려면:
+
+```bash
+# 1. 배포 (최초 1회)
+./deploy.sh
+
+# 2. 서버 시작
+./start.sh
+```
+
+**서버 관리:**
+- 시작: `./start.sh`
+- 중지: `./stop.sh`
+- 재시작: `./restart.sh`
+- 상태 확인: `./status.sh`
+
+자세한 배포 가이드는 **[DEPLOY.md](DEPLOY.md)**를 참고하세요.
 
 ### 방법 2: 수동 설치
 
@@ -84,32 +101,44 @@ pip install -r requirements.txt
 
 ## 실행
 
-### 환경이 이미 설정된 경우
-
-#### macOS/Linux
+### 개발 환경
 ```bash
 ./run.sh
 ```
 
-#### Windows
-```cmd
-run.bat
+또는 직접 실행:
+```bash
+source venv/bin/activate
+python app.py
 ```
 
-### 또는 직접 실행
+### Production 환경
 ```bash
-source venv/bin/activate  # 가상환경 활성화 (macOS/Linux)
-# venv\Scripts\activate  # Windows
-python app.py
+./start.sh    # 백그라운드에서 실행
+./status.sh   # 상태 확인
+./stop.sh     # 중지
+./restart.sh  # 재시작
 ```
 
 서버가 `http://localhost:3000`에서 실행됩니다.
 
 ## 스크립트 파일 설명
 
-- **`setup_and_run.sh`** / **`setup_and_run.bat`**: 환경 설정부터 서버 실행까지 한 번에 (최초 실행 시)
-- **`setup.sh`**: 환경만 설정하고 서버는 실행하지 않음
-- **`run.sh`** / **`run.bat`**: 이미 설정된 환경에서 서버만 실행
+### 개발용
+- **`setup_and_run.sh`**: 개발 환경 설정 + 서버 실행 (최초 실행)
+- **`setup.sh`**: 환경만 설정
+- **`run.sh`**: 개발 서버 실행 (Flask 내장 서버)
+
+### Production용 ⭐
+- **`deploy.sh`**: Production 배포 (환경 설정 + Gunicorn 설치)
+- **`start.sh`**: Production 서버 시작 (백그라운드)
+- **`stop.sh`**: 서버 중지
+- **`restart.sh`**: 서버 재시작
+- **`status.sh`**: 서버 상태 확인
+
+### 기타
+- **`install_poppler_debian.sh`**: Debian/Ubuntu용 Poppler 설치
+- **`gunicorn_config.py`**: Gunicorn 설정 파일
 
 ## API 엔드포인트
 
@@ -322,13 +351,29 @@ API는 다음과 같은 에러 응답을 반환합니다:
 ### 디버그 모드
 앱은 기본적으로 디버그 모드로 실행됩니다. 프로덕션 환경에서는 `app.py`를 수정하거나 WSGI 서버를 사용하세요.
 
-### 프로덕션 배포
-프로덕션 환경에서는 Gunicorn이나 uWSGI를 사용하는 것을 권장합니다:
+### Production 배포
+
+Production 환경에서는 Gunicorn을 사용합니다:
 
 ```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:3000 app:app
+# 간단한 방법
+./deploy.sh
+./start.sh
+
+# 또는 수동으로
+source venv/bin/activate
+gunicorn -c gunicorn_config.py app:app
 ```
+
+**자세한 배포 가이드**: [DEPLOY.md](DEPLOY.md)
+
+#### Production 설정
+- ✅ Gunicorn WSGI 서버
+- ✅ 다중 워커 프로세스
+- ✅ 백그라운드 실행
+- ✅ 자동 재시작
+- ✅ 로그 관리
+- ✅ 환경 변수 설정
 
 ## 주의사항
 
