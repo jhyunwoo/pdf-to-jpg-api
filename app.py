@@ -85,7 +85,7 @@ def upload_image_to_api(image, upload_url, page_number, headers=None):
         headers: 추가 HTTP 헤더 (선택)
     
     Returns:
-        dict: 업로드 결과 정보
+        dict: 업로드 결과 정보 (camelCase)
     """
     try:
         # 이미지를 BytesIO로 변환
@@ -116,7 +116,7 @@ def upload_image_to_api(image, upload_url, page_number, headers=None):
         return {
             'page': page_number,
             'status': 'success',
-            'status_code': response.status_code,
+            'statusCode': response.status_code,
             'message': '업로드 성공',
             'response': response.json() if response.content and response.headers.get('Content-Type', '').startswith('application/json') else None
         }
@@ -125,7 +125,7 @@ def upload_image_to_api(image, upload_url, page_number, headers=None):
         return {
             'page': page_number,
             'status': 'failed',
-            'status_code': getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None,
+            'statusCode': getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None,
             'message': f'업로드 실패: {str(e)}',
             'error': str(e)
         }
@@ -154,22 +154,23 @@ def convert_pdf():
     
     Request Body:
     {
-        "url": "https://your-r2-bucket.com/path/to/file.pdf",
-        "upload_url": "https://api.example.com/upload/image",
+        "pdfUrl": "https://your-r2-bucket.com/path/to/file.pdf",
+        "uploadUrl": "https://api.example.com/upload/image",
         "headers": {"Authorization": "Bearer token"} (optional)
     }
     
     Response:
     {
-        "pdf_url": "https://...",
-        "total_pages": 3,
+        "pdfUrl": "https://...",
+        "uploadUrl": "https://...",
+        "totalPages": 3,
         "uploaded": 3,
         "failed": 0,
         "results": [
             {
                 "page": 1,
                 "status": "success",
-                "status_code": 200,
+                "statusCode": 200,
                 "message": "업로드 성공"
             },
             ...
@@ -181,33 +182,33 @@ def convert_pdf():
         data = request.get_json()
         
         # 필수 필드 검증
-        if not data or 'url' not in data:
+        if not data or 'pdfUrl' not in data:
             return jsonify({
-                'error': 'URL이 필요합니다',
-                'message': 'Request body에 "url" 필드를 포함해주세요'
+                'error': 'pdfUrl이 필요합니다',
+                'message': 'Request body에 "pdfUrl" 필드를 포함해주세요'
             }), 400
         
-        if 'upload_url' not in data:
+        if 'uploadUrl' not in data:
             return jsonify({
-                'error': 'upload_url이 필요합니다',
-                'message': 'Request body에 "upload_url" 필드를 포함해주세요 (이미지를 업로드할 API URL)'
+                'error': 'uploadUrl이 필요합니다',
+                'message': 'Request body에 "uploadUrl" 필드를 포함해주세요 (이미지를 업로드할 API URL)'
             }), 400
         
-        pdf_url = data['url']
-        upload_url = data['upload_url']
+        pdf_url = data['pdfUrl']
+        upload_url = data['uploadUrl']
         custom_headers = data.get('headers', {})  # 선택적 헤더
         
         # URL 검증
         if not pdf_url.startswith(('http://', 'https://')):
             return jsonify({
                 'error': '유효하지 않은 PDF URL입니다',
-                'message': 'url은 http:// 또는 https://로 시작해야 합니다'
+                'message': 'pdfUrl은 http:// 또는 https://로 시작해야 합니다'
             }), 400
         
         if not upload_url.startswith(('http://', 'https://')):
             return jsonify({
-                'error': '유효하지 않은 upload_url입니다',
-                'message': 'upload_url은 http:// 또는 https://로 시작해야 합니다'
+                'error': '유효하지 않은 uploadUrl입니다',
+                'message': 'uploadUrl은 http:// 또는 https://로 시작해야 합니다'
             }), 400
         
         # PDF 다운로드
@@ -232,11 +233,11 @@ def convert_pdf():
         successful_uploads = sum(1 for r in upload_results if r['status'] == 'success')
         failed_uploads = sum(1 for r in upload_results if r['status'] == 'failed')
         
-        # 응답 반환
+        # 응답 반환 (camelCase 형식)
         return jsonify({
-            'pdf_url': pdf_url,
-            'upload_url': upload_url,
-            'total_pages': len(images),
+            'pdfUrl': pdf_url,
+            'uploadUrl': upload_url,
+            'totalPages': len(images),
             'uploaded': successful_uploads,
             'failed': failed_uploads,
             'results': upload_results,
@@ -256,24 +257,25 @@ def get_pdf_info():
     
     Request Body:
     {
-        "url": "https://your-r2-bucket.com/path/to/file.pdf"
+        "pdfUrl": "https://your-r2-bucket.com/path/to/file.pdf"
     }
     
     Response:
     {
+        "pdfUrl": "https://...",
         "pages": 5,
-        "url": "https://..."
+        "status": "success"
     }
     """
     try:
         data = request.get_json()
         
-        if not data or 'url' not in data:
+        if not data or 'pdfUrl' not in data:
             return jsonify({
-                'error': 'URL이 필요합니다'
+                'error': 'pdfUrl이 필요합니다'
             }), 400
         
-        pdf_url = data['url']
+        pdf_url = data['pdfUrl']
         
         # PDF 다운로드
         pdf_content = download_pdf_from_url(pdf_url)
@@ -282,7 +284,7 @@ def get_pdf_info():
         images = convert_pdf_to_jpg(pdf_content)
         
         return jsonify({
-            'url': pdf_url,
+            'pdfUrl': pdf_url,
             'pages': len(images),
             'status': 'success'
         }), 200
@@ -313,21 +315,21 @@ def home():
                 'method': 'POST',
                 'description': 'PDF를 다운로드하여 JPG로 변환한 후 각 페이지를 지정된 API에 PUT 요청으로 업로드합니다',
                 'body': {
-                    'url': 'PDF 파일의 URL (필수)',
-                    'upload_url': '이미지를 업로드할 API URL (필수)',
+                    'pdfUrl': 'PDF 파일의 URL (필수)',
+                    'uploadUrl': '이미지를 업로드할 API URL (필수)',
                     'headers': '업로드 요청에 포함할 헤더 (선택, 예: Authorization)'
                 },
                 'example': {
-                    'url': 'https://your-r2-bucket.com/file.pdf',
-                    'upload_url': 'https://api.example.com/upload/image',
+                    'pdfUrl': 'https://your-r2-bucket.com/file.pdf',
+                    'uploadUrl': 'https://api.example.com/upload/image',
                     'headers': {
                         'Authorization': 'Bearer your-token-here'
                     }
                 },
                 'response_example': {
-                    'pdf_url': 'https://your-r2-bucket.com/file.pdf',
-                    'upload_url': 'https://api.example.com/upload/image',
-                    'total_pages': 3,
+                    'pdfUrl': 'https://your-r2-bucket.com/file.pdf',
+                    'uploadUrl': 'https://api.example.com/upload/image',
+                    'totalPages': 3,
                     'uploaded': 3,
                     'failed': 0,
                     'status': 'completed',
@@ -335,7 +337,7 @@ def home():
                         {
                             'page': 1,
                             'status': 'success',
-                            'status_code': 200,
+                            'statusCode': 200,
                             'message': '업로드 성공'
                         }
                     ]
@@ -345,10 +347,10 @@ def home():
                 'method': 'POST',
                 'description': 'PDF 파일의 페이지 수를 조회합니다',
                 'body': {
-                    'url': 'PDF 파일의 URL (필수)'
+                    'pdfUrl': 'PDF 파일의 URL (필수)'
                 },
                 'example': {
-                    'url': 'https://your-r2-bucket.com/file.pdf'
+                    'pdfUrl': 'https://your-r2-bucket.com/file.pdf'
                 }
             }
         }
