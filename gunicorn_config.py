@@ -9,7 +9,9 @@ bind = f"0.0.0.0:{os.getenv('PORT', '3000')}"
 backlog = 2048
 
 # 워커 프로세스
-workers = int(os.getenv('GUNICORN_WORKERS', multiprocessing.cpu_count() * 2 + 1))
+# 기본값: 4 (환경 변수로 조정 가능)
+# 권장: CPU 집약적 작업의 경우 2-4개, I/O 작업의 경우 더 많이 가능
+workers = int(os.getenv('GUNICORN_WORKERS', 4))
 worker_class = 'sync'
 worker_connections = 1000
 timeout = 300  # PDF 변환 및 업로드는 시간이 걸릴 수 있으므로 넉넉하게 설정
@@ -41,10 +43,12 @@ limit_request_field_size = 8190
 
 def on_starting(server):
     """서버 시작 시 실행"""
+    import os
+    actual_workers = int(os.getenv('GUNICORN_WORKERS', 4))
     print("=" * 50)
     print("PDF to JPG Converter API - Production")
     print("=" * 50)
-    print(f"Workers: {workers}")
+    print(f"Workers: {actual_workers}")
     print(f"Bind: {bind}")
     print(f"Timeout: {timeout}s")
     print("=" * 50)

@@ -47,28 +47,50 @@ echo ""
 # Gunicorn으로 서버 시작 (백그라운드)
 gunicorn -c gunicorn_config.py app:app --daemon
 
+# PID 파일 생성 대기 (최대 5초)
+for i in {1..10}; do
+    if [ -f "logs/gunicorn.pid" ]; then
+        break
+    fi
+    sleep 0.5
+done
+
 # PID 확인
 if [ -f "logs/gunicorn.pid" ]; then
     PID=$(cat logs/gunicorn.pid)
-    echo "✅ 서버가 성공적으로 시작되었습니다!"
-    echo ""
-    echo "서버 정보:"
-    echo "  - PID: $PID"
-    echo "  - 주소: http://localhost:$PORT"
-    echo "  - 로그: logs/access.log, logs/error.log"
-    echo ""
-    echo "서버 상태 확인:"
-    echo "  ps -p $PID"
-    echo ""
-    echo "서버 중지:"
-    echo "  ./stop.sh"
-    echo ""
-    echo "로그 확인:"
-    echo "  tail -f logs/access.log"
-    echo "  tail -f logs/error.log"
+    
+    # 프로세스가 실제로 실행 중인지 확인
+    if ps -p $PID > /dev/null 2>&1; then
+        echo "✅ 서버가 성공적으로 시작되었습니다!"
+        echo ""
+        echo "서버 정보:"
+        echo "  - PID: $PID"
+        echo "  - 주소: http://localhost:$PORT"
+        echo "  - 로그: logs/access.log, logs/error.log"
+        echo ""
+        echo "서버 상태 확인:"
+        echo "  ./status.sh"
+        echo ""
+        echo "서버 중지:"
+        echo "  ./stop.sh"
+        echo ""
+        echo "로그 확인:"
+        echo "  tail -f logs/access.log"
+        echo "  tail -f logs/error.log"
+    else
+        echo "❌ 서버 프로세스가 시작되지 않았습니다."
+        echo "logs/error.log를 확인하세요:"
+        echo ""
+        tail -20 logs/error.log
+        exit 1
+    fi
 else
-    echo "❌ 서버 시작 실패"
-    echo "logs/error.log를 확인하세요."
+    echo "❌ PID 파일이 생성되지 않았습니다."
+    echo "logs/error.log를 확인하세요:"
+    echo ""
+    if [ -f "logs/error.log" ]; then
+        tail -20 logs/error.log
+    fi
     exit 1
 fi
 
