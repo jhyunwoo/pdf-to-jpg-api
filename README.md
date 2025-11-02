@@ -6,7 +6,7 @@ Cloudflare R2에 업로드된 PDF 파일을 다운로드하여 JPG 이미지로 
 
 - ✅ Cloudflare R2 (또는 모든 공개 URL)에서 PDF 파일 다운로드
 - ✅ PDF를 고품질 JPG 이미지로 변환
-- ✅ 변환된 각 페이지를 지정된 API에 PUT 요청으로 자동 업로드
+- ✅ 변환된 각 페이지를 지정된 API에 RAW 바디 스트리밍 PUT 요청으로 자동 업로드
 - ✅ 커스텀 헤더 지원 (Authorization 등)
 - ✅ 업로드 성공/실패 상세 정보 제공
 - ✅ PDF 정보 조회 (페이지 수)
@@ -177,8 +177,8 @@ POST /convert
 **요청 본문:**
 ```json
 {
-  "url": "https://your-r2-bucket.com/path/to/file.pdf",
-  "upload_url": "https://api.example.com/upload/image",
+  "pdfUrl": "https://your-r2-bucket.com/path/to/file.pdf",
+  "uploadUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image",
   "headers": {
     "Authorization": "Bearer your-token-here"
   }
@@ -186,16 +186,16 @@ POST /convert
 ```
 
 **파라미터:**
-- `url` (필수): PDF 파일의 URL
-- `upload_url` (필수): 변환된 이미지를 업로드할 API URL (각 이미지마다 PUT 요청)
+- `pdfUrl` (필수): PDF 파일의 URL
+- `uploadUrl` (필수): 변환된 이미지를 업로드할 API 기본 URL (각 이미지마다 PUT /upload-image/:filename 요청)
 - `headers` (선택): 업로드 요청에 포함할 커스텀 헤더
 
 **응답 예시:**
 ```json
 {
-  "pdf_url": "https://your-r2-bucket.com/sample.pdf",
-  "upload_url": "https://api.example.com/upload/image",
-  "total_pages": 3,
+  "pdfUrl": "https://your-r2-bucket.com/sample.pdf",
+  "uploadUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image",
+  "totalPages": 3,
   "uploaded": 3,
   "failed": 0,
   "status": "completed",
@@ -203,23 +203,41 @@ POST /convert
     {
       "page": 1,
       "status": "success",
-      "status_code": 200,
+      "statusCode": 200,
       "message": "업로드 성공",
-      "response": null
+      "uploadedUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image/page_1.jpg",
+      "response": {
+        "ok": true,
+        "key": "uploaded-image-key",
+        "url": "https://...",
+        "size": 123456
+      }
     },
     {
       "page": 2,
       "status": "success",
-      "status_code": 200,
+      "statusCode": 200,
       "message": "업로드 성공",
-      "response": null
+      "uploadedUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image/page_2.jpg",
+      "response": {
+        "ok": true,
+        "key": "uploaded-image-key",
+        "url": "https://...",
+        "size": 123456
+      }
     },
     {
       "page": 3,
       "status": "success",
-      "status_code": 200,
+      "statusCode": 200,
       "message": "업로드 성공",
-      "response": null
+      "uploadedUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image/page_3.jpg",
+      "response": {
+        "ok": true,
+        "key": "uploaded-image-key",
+        "url": "https://...",
+        "size": 123456
+      }
     }
   ]
 }
@@ -231,8 +249,8 @@ POST /convert
 curl -X POST http://localhost:3000/convert \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://your-r2-bucket.com/sample.pdf",
-    "upload_url": "https://api.example.com/upload/image",
+    "pdfUrl": "https://your-r2-bucket.com/sample.pdf",
+    "uploadUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image",
     "headers": {
       "Authorization": "Bearer your-token-here"
     }
@@ -242,8 +260,8 @@ curl -X POST http://localhost:3000/convert \
 curl -X POST http://localhost:3000/convert \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://your-r2-bucket.com/sample.pdf",
-    "upload_url": "https://api.example.com/upload/image"
+    "pdfUrl": "https://your-r2-bucket.com/sample.pdf",
+    "uploadUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image"
   }'
 ```
 
@@ -255,14 +273,14 @@ POST /convert/info
 **요청 본문:**
 ```json
 {
-  "url": "https://your-r2-bucket.com/path/to/file.pdf"
+  "pdfUrl": "https://your-r2-bucket.com/path/to/file.pdf"
 }
 ```
 
 **응답 예시:**
 ```json
 {
-  "url": "https://your-r2-bucket.com/path/to/file.pdf",
+  "pdfUrl": "https://your-r2-bucket.com/path/to/file.pdf",
   "pages": 5,
   "status": "success"
 }
@@ -278,8 +296,8 @@ import requests
 response = requests.post(
     'http://localhost:3000/convert',
     json={
-        'url': 'https://your-r2-bucket.com/sample.pdf',
-        'upload_url': 'https://api.example.com/upload/image',
+        'pdfUrl': 'https://your-r2-bucket.com/sample.pdf',
+        'uploadUrl': 'https://pdf-to-summary-api.moveto.workers.dev/upload-image',
         'headers': {
             'Authorization': 'Bearer your-token-here'
         }
@@ -287,12 +305,14 @@ response = requests.post(
 )
 
 result = response.json()
-print(f"변환 완료! {result['uploaded']}/{result['total_pages']} 페이지 업로드 성공")
+print(f"변환 완료! {result['uploaded']}/{result['totalPages']} 페이지 업로드 성공")
 print(f"상태: {result['status']}")
 
 # 각 페이지별 업로드 결과 확인
 for page_result in result['results']:
     print(f"페이지 {page_result['page']}: {page_result['status']} - {page_result['message']}")
+    if page_result.get('response'):
+        print(f"  업로드된 URL: {page_result['response'].get('url')}")
 ```
 
 ### JavaScript로 API 호출
@@ -304,8 +324,8 @@ fetch('http://localhost:3000/convert', {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    url: 'https://your-r2-bucket.com/sample.pdf',
-    upload_url: 'https://api.example.com/upload/image',
+    pdfUrl: 'https://your-r2-bucket.com/sample.pdf',
+    uploadUrl: 'https://pdf-to-summary-api.moveto.workers.dev/upload-image',
     headers: {
       'Authorization': 'Bearer your-token-here'
     }
@@ -313,7 +333,7 @@ fetch('http://localhost:3000/convert', {
 })
   .then(response => response.json())
   .then(data => {
-    console.log(`총 ${data.total_pages}페이지 중 ${data.uploaded}페이지 업로드 성공`);
+    console.log(`총 ${data.totalPages}페이지 중 ${data.uploaded}페이지 업로드 성공`);
     console.log('업로드 결과:', data.results);
   });
 
@@ -324,7 +344,7 @@ fetch('http://localhost:3000/convert/info', {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    url: 'https://your-r2-bucket.com/sample.pdf'
+    pdfUrl: 'https://your-r2-bucket.com/sample.pdf'
   })
 })
   .then(response => response.json())
@@ -378,7 +398,8 @@ gunicorn -c gunicorn_config.py app:app
 ## 주의사항
 
 - PDF 파일은 공개적으로 접근 가능한 URL이어야 합니다
-- 업로드 API는 PUT 요청을 받아야 하며, `Content-Type: image/jpeg` 형식으로 전송됩니다
+- 업로드 API는 PUT 요청을 받아야 하며, RAW 바이너리 스트림으로 전송됩니다
+- 파일명은 URL 경로에 포함됩니다 (예: PUT /upload-image/page_1.jpg)
 - 대용량 PDF 파일은 처리 시간이 오래 걸릴 수 있습니다
 - 각 페이지는 순차적으로 업로드됩니다
 - 업로드 실패한 페이지가 있어도 다음 페이지는 계속 처리됩니다
@@ -391,19 +412,31 @@ gunicorn -c gunicorn_config.py app:app
 이 API가 이미지를 업로드하는 외부 API는 다음 조건을 만족해야 합니다:
 
 - **HTTP 메서드**: PUT
+- **URL 형식**: `/upload-image/:filename` (파일명이 URL 경로에 포함됨)
 - **Content-Type**: `image/jpeg`
-- **요청 본문**: JPEG 이미지의 바이너리 데이터
+- **요청 본문**: JPEG 이미지의 RAW 바이너리 스트림
+- **파일명**: `page_{페이지번호}.jpg` (예: page_1.jpg, page_2.jpg)
 - **커스텀 헤더**: 필요시 `headers` 파라미터로 전달 가능 (예: Authorization)
 
 **예시: 업로드 API가 받는 요청**
 ```http
-PUT /upload/image HTTP/1.1
-Host: api.example.com
+PUT /upload-image/page_1.jpg HTTP/1.1
+Host: pdf-to-summary-api.moveto.workers.dev
 Content-Type: image/jpeg
 Authorization: Bearer your-token-here
 Content-Length: 123456
 
-[JPEG binary data]
+[JPEG binary data - RAW byte stream]
+```
+
+**예상 응답 형식:**
+```json
+{
+  "ok": true,
+  "key": "unique-image-key",
+  "url": "https://storage.example.com/images/unique-image-key.jpg",
+  "size": 123456
+}
 ```
 
 ## 문제 해결

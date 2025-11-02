@@ -53,8 +53,8 @@ curl http://localhost:3000/health
 curl -X POST http://localhost:3000/convert \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://your-r2-bucket.com/sample.pdf",
-    "upload_url": "https://api.example.com/upload/image",
+    "pdfUrl": "https://your-r2-bucket.com/sample.pdf",
+    "uploadUrl": "https://pdf-to-summary-api.moveto.workers.dev/upload-image",
     "headers": {
       "Authorization": "Bearer your-token"
     }
@@ -69,8 +69,8 @@ import requests
 response = requests.post(
     'http://localhost:3000/convert',
     json={
-        'url': 'https://your-r2-bucket.com/sample.pdf',
-        'upload_url': 'https://api.example.com/upload/image',
+        'pdfUrl': 'https://your-r2-bucket.com/sample.pdf',
+        'uploadUrl': 'https://pdf-to-summary-api.moveto.workers.dev/upload-image',
         'headers': {
             'Authorization': 'Bearer your-token'
         }
@@ -78,7 +78,7 @@ response = requests.post(
 )
 
 result = response.json()
-print(f"업로드 완료: {result['uploaded']}/{result['total_pages']} 페이지")
+print(f"업로드 완료: {result['uploaded']}/{result['totalPages']} 페이지")
 ```
 
 ---

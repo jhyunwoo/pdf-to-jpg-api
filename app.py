@@ -76,11 +76,11 @@ def convert_pdf_to_jpg(pdf_content):
 
 def upload_image_to_api(image, upload_url, page_number, headers=None):
     """
-    변환된 이미지를 특정 API에 PUT 요청으로 업로드합니다.
+    변환된 이미지를 특정 API에 RAW 바디 스트리밍 PUT 요청으로 업로드합니다.
     
     Args:
         image: PIL Image 객체
-        upload_url: 업로드할 API URL
+        upload_url: 업로드할 API URL (기본 URL, 파일명이 자동으로 추가됨)
         page_number: 페이지 번호
         headers: 추가 HTTP 헤더 (선택)
     
@@ -93,6 +93,14 @@ def upload_image_to_api(image, upload_url, page_number, headers=None):
         image.save(img_byte_arr, format='JPEG', quality=95)
         img_byte_arr.seek(0)
         
+        # 파일명 생성
+        filename = f'page_{page_number}.jpg'
+        
+        # URL에 파일명 추가 (URL이 /로 끝나지 않으면 추가)
+        if not upload_url.endswith('/'):
+            upload_url += '/'
+        full_url = f'{upload_url}{filename}'
+        
         # 기본 헤더 설정
         request_headers = {
             'Content-Type': 'image/jpeg'
@@ -102,9 +110,9 @@ def upload_image_to_api(image, upload_url, page_number, headers=None):
         if headers:
             request_headers.update(headers)
         
-        # PUT 요청으로 이미지 업로드
+        # PUT 요청으로 RAW 바이너리 데이터 업로드
         response = requests.put(
-            upload_url,
+            full_url,
             data=img_byte_arr.getvalue(),
             headers=request_headers,
             timeout=60
@@ -113,21 +121,39 @@ def upload_image_to_api(image, upload_url, page_number, headers=None):
         # 응답 확인
         response.raise_for_status()
         
+        # 응답 데이터 파싱
+        response_data = None
+        if response.content:
+            try:
+                response_data = response.json()
+            except:
+                response_data = {'raw': response.text}
+        
         return {
             'page': page_number,
             'status': 'success',
             'statusCode': response.status_code,
             'message': '업로드 성공',
-            'response': response.json() if response.content and response.headers.get('Content-Type', '').startswith('application/json') else None
+            'uploadedUrl': full_url,
+            'response': response_data
         }
         
     except requests.exceptions.RequestException as e:
+        error_message = str(e)
+        error_response = None
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_response = e.response.json()
+            except:
+                error_response = {'raw': e.response.text if e.response.text else None}
+        
         return {
             'page': page_number,
             'status': 'failed',
             'statusCode': getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None,
-            'message': f'업로드 실패: {str(e)}',
-            'error': str(e)
+            'message': f'업로드 실패: {error_message}',
+            'error': str(e),
+            'errorResponse': error_response
         }
     except Exception as e:
         return {
@@ -313,15 +339,15 @@ def home():
         'documentation': {
             '/convert': {
                 'method': 'POST',
-                'description': 'PDF를 다운로드하여 JPG로 변환한 후 각 페이지를 지정된 API에 PUT 요청으로 업로드합니다',
+                'description': 'PDF를 다운로드하여 JPG로 변환한 후 각 페이지를 지정된 API에 RAW 바디 스트리밍 PUT 요청으로 업로드합니다',
                 'body': {
                     'pdfUrl': 'PDF 파일의 URL (필수)',
-                    'uploadUrl': '이미지를 업로드할 API URL (필수)',
+                    'uploadUrl': '이미지를 업로드할 API 기본 URL (필수, PUT /upload-image/:filename 형식)',
                     'headers': '업로드 요청에 포함할 헤더 (선택, 예: Authorization)'
                 },
                 'example': {
                     'pdfUrl': 'https://your-r2-bucket.com/file.pdf',
-                    'uploadUrl': 'https://api.example.com/upload/image',
+                    'uploadUrl': 'https://pdf-to-summary-api.moveto.workers.dev/upload-image',
                     'headers': {
                         'Authorization': 'Bearer your-token-here'
                     }
