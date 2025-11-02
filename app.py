@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from pdf2image import convert_from_path
 import requests
 import os
@@ -9,6 +10,15 @@ from datetime import datetime
 import logging
 
 app = Flask(__name__)
+
+# CORS 설정 - 모든 origin 허용
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # 환경 변수에서 설정 가져오기
 ENV = os.getenv('FLASK_ENV', 'development')
