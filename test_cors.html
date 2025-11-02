@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS 테스트 페이지</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #0b7dda;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            display: none;
+            margin-top: 10px;
+            color: #666;
+        }
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 CORS 테스트 페이지</h1>
+        <p>Cloudflare Tunnel을 통한 API의 CORS 설정을 테스트합니다.</p>
+        
+        <div class="input-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="https://pdf-to-jpg.moveto.kr" placeholder="https://your-api-domain.com">
+        </div>
+
+        <div>
+            <button onclick="testHealth()">Health Check</button>
+            <button onclick="testPreflight()" class="secondary">Preflight 테스트</button>
+            <button onclick="testConvert()" class="secondary">Convert API 테스트</button>
+        </div>
+
+        <div class="loading" id="loading">⏳ 요청 중...</div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
+
+        function showLoading() {
+            loadingDiv.classList.add('active');
+        }
+
+        function hideLoading() {
+            loadingDiv.classList.remove('active');
+        }
+
+        function showResult(message, type = 'info') {
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        async function testHealth() {
+            const apiUrl = getApiUrl();
+            showLoading();
+            
+            try {
+                const response = await fetch(`${apiUrl}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: headers,
+                    data: data
+                };
+
+                // CORS 헤더 확인
+                const corsHeaders = {
+                    'access-control-allow-origin': headers['access-control-allow-origin'],
+                    'access-control-allow-methods': headers['access-control-allow-methods'],
+                    'access-control-allow-headers': headers['access-control-allow-headers']
+                };
+
+                const hasCORS = corsHeaders['access-control-allow-origin'] === '*';
+                
+                showResult(
+                    `✅ Health Check 성공!\n\n` +
+                    `Status: ${response.status} ${response.statusText}\n\n` +
+                    `CORS 헤더:\n${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                    `응답 데이터:\n${JSON.stringify(data, null, 2)}\n\n` +
+                    `${hasCORS ? '✓ CORS가 올바르게 설정되었습니다!' : '⚠ CORS 설정을 확인하세요.'}`,
+                    hasCORS ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult(
+                    `❌ 오류 발생:\n\n${error.message}\n\n` +
+                    `가능한 원인:\n` +
+                    `1. API 서버가 실행 중이 아님\n` +
+                    `2. CORS 설정 문제\n` +
+                    `3. URL이 올바르지 않음\n` +
+                    `4. 네트워크 문제`,
+                    'error'
+                );
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function testPreflight() {
+            const apiUrl = getApiUrl();
+            showLoading();
+            
+            try {
+                const response = await fetch(`${apiUrl}/convert`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type,Authorization'
+                    }
+                });
+
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+
+                const corsHeaders = {
+                    'access-control-allow-origin': headers['access-control-allow-origin'],
+                    'access-control-allow-methods': headers['access-control-allow-methods'],
+                    'access-control-allow-headers': headers['access-control-allow-headers'],
+                    'access-control-max-age': headers['access-control-max-age']
+                };
+
+                const isValid = 
+                    corsHeaders['access-control-allow-origin'] === '*' &&
+                    corsHeaders['access-control-allow-methods'] &&
+                    corsHeaders['access-control-allow-headers'];
+
+                showResult(
+                    `Preflight 테스트 결과:\n\n` +
+                    `Status: ${response.status}\n\n` +
+                    `CORS 헤더:\n${JSON.stringify(corsHeaders, null, 2)}\n\n` +
+                    `${isValid ? '✅ Preflight 요청이 올바르게 처리됩니다!' : '❌ Preflight 설정에 문제가 있습니다.'}`,
+                    isValid ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult(
+                    `❌ Preflight 테스트 실패:\n\n${error.message}`,
+                    'error'
+                );
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function testConvert() {
+            const apiUrl = getApiUrl();
+            showLoading();
+            
+            try {
+                // 실제 변환은 하지 않고 요청만 테스트
+                const response = await fetch(`${apiUrl}/convert`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pdfUrl: 'https://example.com/test.pdf',
+                        uploadUrl: 'https://example.com/upload'
+                    })
+                });
+
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = await response.text();
+                }
+
+                const corsOK = headers['access-control-allow-origin'] === '*';
+
+                showResult(
+                    `Convert API 테스트:\n\n` +
+                    `Status: ${response.status}\n\n` +
+                    `CORS 헤더 (Access-Control-Allow-Origin): ${headers['access-control-allow-origin']}\n\n` +
+                    `응답:\n${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}\n\n` +
+                    `${corsOK ? '✅ CORS가 올바르게 작동합니다!' : '⚠ CORS 설정을 확인하세요.'}`,
+                    response.ok ? (corsOK ? 'success' : 'info') : 'error'
+                );
+            } catch (error) {
+                showResult(
+                    `❌ Convert API 테스트 실패:\n\n${error.message}`,
+                    'error'
+                );
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 페이지 로드 시 자동으로 Health Check
+        window.addEventListener('load', () => {
+            console.log('CORS 테스트 페이지 로드됨');
+            console.log('브라우저 콘솔에서 네트워크 탭을 열어 CORS 헤더를 확인하세요.');
+        });
+    </script>
+</body>
+</html>
+
