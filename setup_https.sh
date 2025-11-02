@@ -86,8 +86,26 @@ sudo nginx -t
 
 # Nginx 재시작
 echo "Nginx를 재시작합니다..."
-sudo systemctl restart nginx
-sudo systemctl enable nginx
+if command -v systemctl &> /dev/null; then
+    # systemd 사용 시스템 (Ubuntu 16.04+, CentOS 7+, etc.)
+    sudo systemctl restart nginx
+    sudo systemctl enable nginx
+elif command -v service &> /dev/null; then
+    # init.d 사용 시스템 (오래된 Ubuntu, Debian, etc.)
+    sudo service nginx restart
+    sudo update-rc.d nginx enable 2>/dev/null || sudo chkconfig nginx on 2>/dev/null
+elif [ -f /etc/init.d/nginx ]; then
+    # 직접 init 스크립트 실행
+    sudo /etc/init.d/nginx restart
+else
+    # macOS 또는 기타 시스템
+    if [ -f /usr/local/bin/nginx ]; then
+        sudo nginx -s reload || sudo nginx
+    else
+        echo "경고: Nginx 재시작 방법을 찾을 수 없습니다."
+        echo "수동으로 재시작해주세요: sudo nginx -s reload"
+    fi
+fi
 
 # Let's Encrypt SSL 인증서 발급
 echo "SSL 인증서를 발급받습니다..."
