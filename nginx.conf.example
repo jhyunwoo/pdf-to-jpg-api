@@ -1,0 +1,38 @@
+# Nginx 설정 예제
+# /etc/nginx/sites-available/pdf-to-jpg-api
+
+server {
+    listen 80;
+    server_name your-domain.com;  # 도메인으로 변경하세요
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # CORS 헤더 (백업용)
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+        
+        # Preflight 요청 처리
+        if ($request_method = 'OPTIONS') {
+            return 204;
+        }
+        
+        # 타임아웃 설정 (PDF 변환 시간 고려)
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+        proxy_read_timeout 300;
+        send_timeout 300;
+    }
+}
+
+# SSL 설정은 certbot이 자동으로 추가합니다
+
