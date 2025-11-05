@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pdf2image import convert_from_path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import os
 import tempfile
@@ -83,8 +84,17 @@ def convert_pdf_to_jpg(pdf_content):
         with open(temp_pdf_path, 'wb') as f:
             f.write(pdf_content)
         
-        # PDF를 이미지로 변환 (DPI를 높이면 품질이 좋아지지만 파일 크기도 커집니다)
-        images = convert_from_path(temp_pdf_path, dpi=200, fmt='jpeg')
+        # CPU 코어 수에 맞춰 멀티프로세스 변환 가속
+        cpu_workers_env = os.getenv('CPU_WORKERS')
+        cpu_workers = int(cpu_workers_env) if cpu_workers_env and cpu_workers_env.isdigit() else (os.cpu_count() or 2)
+
+        # PDF를 이미지로 변환 (thread_count는 내부적으로 멀티프로세싱을 활용)
+        images = convert_from_path(
+            temp_pdf_path,
+            dpi=200,
+            fmt='jpeg',
+            thread_count=cpu_workers
+        )
         
         # 임시 PDF 파일 삭제
         os.remove(temp_pdf_path)
@@ -271,11 +281,32 @@ def convert_pdf():
                 'message': 'PDF에서 이미지를 생성할 수 없습니다'
             }), 500
         
-        # 각 이미지를 API에 업로드
-        upload_results = []
-        for i, image in enumerate(images, start=1):
-            result = upload_image_to_api(image, upload_url, i, custom_headers)
-            upload_results.append(result)
+        # 각 이미지를 API에 업로드 (네트워크 I/O 병렬화)
+        upload_workers_env = os.getenv('UPLOAD_WORKERS')
+        # 업로드는 I/O 바운드이므로 CPU 코어수의 2배 정도를 기본값으로 사용
+        default_upload_workers = max(4, (os.cpu_count() or 2) * 2)
+        upload_workers = int(upload_workers_env) if upload_workers_env and upload_workers_env.isdigit() else default_upload_workers
+
+        upload_results = [None] * len(images)
+        with ThreadPoolExecutor(max_workers=upload_workers) as executor:
+            future_to_page = {
+                executor.submit(upload_image_to_api, image, upload_url, page_num, custom_headers): page_num
+                for page_num, image in enumerate(images, start=1)
+            }
+
+            for future in as_completed(future_to_page):
+                page = future_to_page[future]
+                try:
+                    result = future.result()
+                except Exception as e:
+                    result = {
+                        'page': page,
+                        'status': 'failed',
+                        'message': f'업로드 실패: {str(e)}',
+                        'error': str(e)
+                    }
+                # 페이지 순서 유지
+                upload_results[page - 1] = result
         
         # 업로드 통계 계산
         successful_uploads = sum(1 for r in upload_results if r['status'] == 'success')
